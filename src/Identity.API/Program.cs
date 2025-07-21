@@ -15,11 +15,45 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
+// Configure external authentication providers
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        var clientId = builder.Configuration["Authentication:Google:ClientId"];
+        var clientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        
+        if (!string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(clientSecret))
+        {
+            options.ClientId = clientId;
+            options.ClientSecret = clientSecret;
+            options.CallbackPath = "/signin-google";
+            
+            // Map Google claims to Identity claims
+            options.ClaimActions.MapJsonKey("picture", "picture", "url");
+            options.ClaimActions.MapJsonKey("locale", "locale", "string");
+        }
+    })
+    .AddMicrosoftAccount(options =>
+    {
+        var clientId = builder.Configuration["Authentication:Microsoft:ClientId"];
+        var clientSecret = builder.Configuration["Authentication:Microsoft:ClientSecret"];
+        
+        if (!string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(clientSecret))
+        {
+            options.ClientId = clientId;
+            options.ClientSecret = clientSecret;
+            options.CallbackPath = "/signin-microsoft";
+            
+            // Map Microsoft claims
+            options.ClaimActions.MapJsonKey("picture", "picture");
+        }
+    });
+
+
 builder.Services.AddIdentityServer(options =>
 {
     //options.IssuerUri = "null";
     options.Authentication.CookieLifetime = TimeSpan.FromHours(2);
-
     options.Events.RaiseErrorEvents = true;
     options.Events.RaiseInformationEvents = true;
     options.Events.RaiseFailureEvents = true;

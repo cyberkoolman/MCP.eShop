@@ -1,47 +1,377 @@
 @model LoginViewModel
 
-<div class="login-page">
-    <div class="container">
-        <div class="row top-buffer">
+<style>
+    /* Override the existing login-container styles */
+    .modern-login-page {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        margin: 0;
+    }
 
-            @if (Model.EnableLocalLogin)
-            {
-                <div class="col"></div>
-                <div class="col-sm-6">
-                    <form asp-route="Login">
-                        <input type="hidden" asp-for="ReturnUrl" />
-                        <div class="login-container">
-                            <h2>Login</h2>
-                            <partial name="_ValidationSummary" />
-                            <div class="form-group">
-                                <label asp-for="Username"></label>
-                                <input class="form-control" placeholder="Username" asp-for="Username" autofocus>
-                            </div> 
-                            <div class="form-group">
-                                <label asp-for="Password"></label>
-                                <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
-                            </div>
-                            @if (Model.AllowRememberLogin)
-                            {
-                                <div class="form-group">
-                                    <div class="form-check">
-                                        <input class="form-check-input" asp-for="RememberLogin">
-                                        <label class="form-check-label" asp-for="RememberLogin">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                </div>
-                            }
+    .modern-login-container {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+    }
 
-                            <div>
-                                <p>The default users are alice/bob, password: Pass123$</p>
-                            </div>
-                            <button class="btn btn-primary" name="button" value="login">Login</button>
+    .modern-login-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        animation: slideUp 0.6s ease-out;
+        padding: 0;
+        box-shadow: none; /* Override existing box-shadow */
+        flex-direction: row; /* Override existing flex-direction */
+        gap: 0; /* Override existing gap */
+        justify-content: center; /* Override existing justify-content */
+    }
+
+    .modern-login-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        padding: 3rem 2rem 2.5rem;
+        position: relative;
+    }
+
+    .modern-login-header::after {
+        content: '';
+        position: absolute;
+        bottom: -15px;
+        left: 0;
+        right: 0;
+        height: 30px;
+        background: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .modern-brand-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .modern-brand-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        letter-spacing: -1px;
+    }
+
+    .modern-brand-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .modern-login-body {
+        padding: 2rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .modern-demo-info {
+        background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+        border: 1px solid #93c5fd;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .modern-demo-badge {
+        background: #3b82f6;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: inline-block;
+        text-transform: uppercase;
+    }
+
+    .modern-demo-text {
+        color: #1e40af;
+        font-size: 0.875rem;
+    }
+
+    .modern-demo-text strong {
+        color: #1e3a8a;
+        font-weight: 600;
+    }
+
+    .modern-form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .modern-form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #374151;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .modern-form-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 1rem;
+        background: #f9fafb;
+        transition: all 0.3s ease;
+        font-family: 'Plus Jakarta Sans', inherit;
+        max-width: 100%; /* Override site.css max-width: 280px */
+    }
+
+    .modern-form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .modern-form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modern-form-check input[type="checkbox"] {
+        margin-right: 0.75rem;
+        width: 18px;
+        height: 18px;
+        max-width: 18px; /* Override site.css max-width: 280px */
+    }
+
+    .modern-form-check label {
+        color: #4b5563;
+        font-size: 0.875rem;
+        margin-bottom: 0;
+        cursor: pointer;
+    }
+
+    .modern-btn-primary {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+        font-family: 'Plus Jakarta Sans', inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .modern-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .modern-btn-social {
+        width: 100%;
+        padding: 0.875rem 1.5rem;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: #374151;
+        font-family: 'Plus Jakarta Sans', inherit;
+        text-decoration: none;
+    }
+
+    .modern-btn-social:hover {
+        border-color: #667eea;
+        color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+    }
+
+    .modern-divider {
+        text-align: center;
+        margin: 1.5rem 0;
+        position: relative;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .modern-divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #d1d5db, transparent);
+    }
+
+    .modern-divider span {
+        background: white;
+        padding: 0 1rem;
+    }
+
+    .modern-social-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .modern-login-page {
+            padding: 1rem;
+        }
+        
+        .modern-login-header {
+            padding: 2rem 1.5rem 2rem;
+        }
+        
+        .modern-login-body {
+            padding: 1.5rem;
+        }
+        
+        .modern-brand-title {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+
+<div class="modern-login-page">
+    <div class="modern-login-container">
+        <div class="modern-login-card">
+            <!-- Header -->
+            <div class="modern-login-header">
+                <div class="modern-brand-icon">🛒</div>
+                <h1 class="modern-brand-title">eShop</h1>
+                <p class="modern-brand-subtitle">Your modern e-commerce experience</p>
+            </div>
+
+            <!-- Body -->
+            <div class="modern-login-body">
+                @if (Model.EnableLocalLogin)
+                {
+                    <!-- Demo Info -->
+                    <div class="modern-demo-info">
+                        <div class="modern-demo-badge">Demo Access</div>
+                        <div class="modern-demo-text">
+                            <strong>Username:</strong> alice or bob<br>
+                            <strong>Password:</strong> Pass123$
                         </div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form asp-route="Login" method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        
+                        <!-- Username -->
+                        <div class="modern-form-group">
+                            <label asp-for="Username">Username</label>
+                            <input type="text" class="modern-form-input" placeholder="Enter your username" asp-for="Username" autofocus required>
+                        </div>
+                        
+                        <!-- Password -->
+                        <div class="modern-form-group">
+                            <label asp-for="Password">Password</label>
+                            <input type="password" class="modern-form-input" placeholder="Enter your password" asp-for="Password" autocomplete="current-password" required>
+                        </div>
+                        
+                        <!-- Remember Me -->
+                        @if (Model.AllowRememberLogin)
+                        {
+                            <div class="modern-form-check">
+                                <input type="checkbox" id="rememberMe" asp-for="RememberLogin">
+                                <label for="rememberMe">Remember me for 30 days</label>
+                            </div>
+                        }
+                        
+                        <!-- Sign In Button -->
+                        <button type="submit" class="modern-btn-primary" name="button" value="login">
+                            Sign In
+                        </button>
                     </form>
-                </div>
-                <div class="col"></div>
-            }
+                }
+                
+                <!-- Social Login -->
+                @if (Model.VisibleExternalProviders?.Any() == true)
+                {
+                    <div class="modern-divider">
+                        <span>Or continue with</span>
+                    </div>
+                    
+                    @foreach (var provider in Model.VisibleExternalProviders)
+                    {
+                        <form asp-controller="Account" asp-action="ExternalLogin" method="post">
+                            <input type="hidden" name="provider" value="@provider.AuthenticationScheme" />
+                            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                            
+                            @if (provider.AuthenticationScheme == "Google")
+                            {
+                                <button type="submit" class="modern-btn-social">
+                                    <svg class="modern-social-icon" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                    Continue with Google
+                                </button>
+                            }
+                            else if (provider.AuthenticationScheme == "Microsoft")
+                            {
+                                <button type="submit" class="modern-btn-social">
+                                    <svg class="modern-social-icon" viewBox="0 0 24 24">
+                                        <path fill="#F25022" d="M1 1h10v10H1z"/>
+                                        <path fill="#00A4EF" d="M13 1h10v10H13z"/>
+                                        <path fill="#7FBA00" d="M1 13h10v10H1z"/>
+                                        <path fill="#FFB900" d="M13 13h10v10H13z"/>
+                                    </svg>
+                                    Continue with Microsoft
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="modern-btn-social">
+                                    Continue with @provider.DisplayName
+                                </button>
+                            }
+                        </form>
+                    }
+                }
+            </div>
         </div>
     </div>
 </div>

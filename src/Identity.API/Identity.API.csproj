@@ -10,6 +10,8 @@
     <PackageReference Include="Duende.IdentityServer.EntityFramework" />
     <PackageReference Include="Duende.IdentityServer.Storage" />
     <PackageReference Include="Duende.IdentityServer" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
