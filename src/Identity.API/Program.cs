@@ -74,6 +74,20 @@ builder.Services.AddTransient<IProfileService, ProfileService>();
 builder.Services.AddTransient<ILoginService<ApplicationUser>, EFLoginService>();
 builder.Services.AddTransient<IRedirectService, RedirectService>();
 
+// Add this to register your SSE service
+builder.Services.AddSingleton<ISSEService, SSEService>();
+
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();

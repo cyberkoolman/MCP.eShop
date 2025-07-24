@@ -5,37 +5,39 @@ namespace IdentityServerHost.Quickstart.UI
 {
     [SecurityHeaders]
     [AllowAnonymous]
-    public class AccountController : Controller
+public class AccountController : Controller
+{
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IIdentityServerInteractionService _interaction;
+    private readonly IClientStore _clientStore;
+    private readonly IAuthenticationSchemeProvider _schemeProvider;
+    private readonly IAuthenticationHandlerProvider _handlerProvider;
+    private readonly IEventService _events;
+    private readonly ILogger<AccountController> _logger;
+     private readonly ISSEService _sseService;
+
+    public AccountController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IIdentityServerInteractionService interaction,
+        IClientStore clientStore,
+        IAuthenticationSchemeProvider schemeProvider,
+        IAuthenticationHandlerProvider handlerProvider,
+        IEventService events,
+        ILogger<AccountController> logger,
+        ISSEService sseService) // ADD THIS
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly IIdentityServerInteractionService _interaction;
-        private readonly IClientStore _clientStore;
-        private readonly IAuthenticationSchemeProvider _schemeProvider;
-        private readonly IAuthenticationHandlerProvider _handlerProvider;
-        private readonly IEventService _events;
-        private readonly ILogger<AccountController> _logger;
-
-        public AccountController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IIdentityServerInteractionService interaction,
-            IClientStore clientStore,
-            IAuthenticationSchemeProvider schemeProvider,
-            IAuthenticationHandlerProvider handlerProvider,
-            IEventService events,
-            ILogger<AccountController> logger)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _interaction = interaction;
-            _clientStore = clientStore;
-            _schemeProvider = schemeProvider;
-            _handlerProvider = handlerProvider;
-            _events = events;
-            _logger = logger;
-        }
-
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _interaction = interaction;
+        _clientStore = clientStore;
+        _schemeProvider = schemeProvider;
+        _handlerProvider = handlerProvider;
+        _events = events;
+        _logger = logger;
+        _sseService = sseService; // ADD THIS
+    }
         /// <summary>
         /// Entry point into the login workflow
         /// </summary>
@@ -142,6 +144,26 @@ namespace IdentityServerHost.Quickstart.UI
             };
 
             await HttpContext.SignInAsync(isuser, localSignInProps);
+
+            // BROADCAST LOGIN EVENT VIA SSE
+            try
+            {
+                await _sseService.BroadcastToAll("user_authenticated", new
+                {
+                    userId = user.Email ?? user.UserName,
+                    userName = user.UserName,
+                    provider = provider,
+                    timestamp = DateTime.UtcNow,
+                    // sessionId = HttpContext.Session?.Id,
+                    sessionId = Guid.NewGuid().ToString(), // Generate a random session ID
+                    action = "external_login_success"
+                });
+                _logger.LogInformation($"Broadcasted login event for user: {user.Email ?? user.UserName}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to broadcast login event via SSE");
+            }
 
             // Delete temporary cookie used during external authentication
             await HttpContext.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
@@ -333,7 +355,27 @@ namespace IdentityServerHost.Quickstart.UI
                     var user = await _userManager.FindByNameAsync(model.Username);
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.Client.ClientId));
 
-                    if (context != null)
+
+                // BROADCAST LOGIN EVENT VIA SSE
+                try
+                {
+                    await _sseService.BroadcastToAll("user_authenticated", new
+                    {
+                        userId = user.Email ?? user.UserName,
+                        userName = user.UserName,
+                        provider = "local",
+                        timestamp = DateTime.UtcNow,
+                        sessionId = HttpContext.Session?.Id,
+                        action = "local_login_success"
+                    });
+                    _logger.LogInformation($"Broadcasted login event for user: {user.Email ?? user.UserName}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to broadcast login event via SSE");
+                }
+
+                if (context != null)
                     {
                         if (context.IsNativeClient())
                         {
@@ -406,12 +448,32 @@ namespace IdentityServerHost.Quickstart.UI
 
             if (User?.Identity.IsAuthenticated == true)
             {
+                var currentUserId = User.GetDisplayName() ?? User.GetSubjectId();
+
                 // delete local authentication cookie
                 await _signInManager.SignOutAsync();
 
                 // raise the logout event
                 await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
+
+                // BROADCAST LOGOUT EVENT VIA SSE
+                try
+                {
+                    await _sseService.BroadcastToAll("user_logged_out", new
+                    {
+                        userId = currentUserId,
+                        timestamp = DateTime.UtcNow,
+                        sessionId = HttpContext.Session?.Id,
+                        action = "logout_success"
+                    });
+                    _logger.LogInformation($"Broadcasted logout event for user: {currentUserId}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to broadcast logout event via SSE");
+                }
             }
+
 
             // check if we need to trigger sign-out at an upstream identity provider
             if (vm.TriggerExternalSignout)
